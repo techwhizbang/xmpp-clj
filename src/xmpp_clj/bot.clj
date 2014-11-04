@@ -2,6 +2,7 @@
   (:import [org.jivesoftware.smack
             Chat ChatManager ConnectionConfiguration MessageListener
 	    SASLAuthentication XMPPConnection XMPPException PacketListener]
+     [org.jivesoftware.smack.tcp XMPPTCPConnection]
 	   [org.jivesoftware.smack.packet
             Message Presence Presence$Type Message$Type]
 	   [org.jivesoftware.smack.filter MessageTypeFilter]
@@ -83,14 +84,15 @@
         pw (:password connect-info)
         host (:host connect-info)
         domain (:domain connect-info)
+        resource (:resource connect-info)
         port (get connect-info :port 5222)
         connect-config (ConnectionConfiguration. host port domain)
-        conn (XMPPConnection. connect-config)]
+        conn (XMPPTCPConnection. connect-config)]
     (if-not (and un pw host domain)
       (throw (Exception. "Required connection params not provided (:username :password :host :domain)")))
     (.connect conn)
     (try
-      (.login conn un pw)
+      (.login conn un pw resource)
       (catch XMPPException e
         (throw (Exception. (str "Couldn't log in with user's credentials: "
                                 un
@@ -153,7 +155,7 @@
       (throw (Exception. "Require a room to join.")))
     (let [conn (connect connect-info)
           muc (MultiUserChat. conn room)]
-      (.join muc nick nil no-history muc-join-timeout-ms)
+      (.join muc actual-nick nil no-history muc-join-timeout-ms)
       (add-listener conn packet-processor groupchat-message-type-filter :from-name)
       conn)))
 
